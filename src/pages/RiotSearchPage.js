@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Search, Trophy, TrendingUp, Target, ChevronDown, ChevronUp, Sword, Coins, Activity, Clock, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Trophy, TrendingUp, Target, Sword } from 'lucide-react';
 
-const RiotGameData = () => {
+const RiotSearchPage = () => {
+  const navigate = useNavigate();
   const [gameName, setGameName] = useState('');
   const [tagLine, setTagLine] = useState('');
   const [loading, setLoading] = useState(false);
   const [playerData, setPlayerData] = useState(null);
   const [error, setError] = useState(null);
-  const [expandedMatches, setExpandedMatches] = useState(new Set());
 
   // 검색 API 호출
   const handleSearch = async () => {
@@ -22,7 +23,7 @@ const RiotGameData = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/api/riot/player/${gameName}/${tagLine}/matches?count=5`
+        `http://localhost:8081/api/riot/player/${gameName}/${tagLine}/matches?count=5`
       );
       
       if (!response.ok) {
@@ -38,15 +39,10 @@ const RiotGameData = () => {
     }
   };
 
-  // 경기 펼치기/접기 토글
-  const toggleMatch = (matchId) => {
-    const newExpanded = new Set(expandedMatches);
-    if (newExpanded.has(matchId)) {
-      newExpanded.delete(matchId);
-    } else {
-      newExpanded.add(matchId);
-    }
-    setExpandedMatches(newExpanded);
+  // 경기 클릭 시 상세 페이지로 이동
+  const handleMatchClick = (match) => {
+    const puuid = playerData.player.puuid;
+    navigate(`/riot/match/${match.matchId}?puuid=${puuid}`);
   };
 
   // 날짜 포맷팅 (상대 시간)
@@ -61,13 +57,6 @@ const RiotGameData = () => {
     if (diffMins < 60) return `${diffMins}분 전`;
     if (diffHours < 24) return `${diffHours}시간 전`;
     return `${diffDays}일 전`;
-  };
-
-  // 게임 시간 포맷팅
-  const formatGameLength = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}분 ${secs}초`;
   };
 
   return (
@@ -187,112 +176,49 @@ const RiotGameData = () => {
 
             {/* 경기 목록 */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">📋 최근 경기 내역</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">📋 최근 경기 내역 (클릭해서 상세보기)</h3>
               
               <div className="space-y-3">
                 {playerData.matches.map((match) => (
-                  <div key={match.matchId} className="border-2 border-gray-200 rounded-lg overflow-hidden hover:border-blue-300 transition-colors">
-                    {/* 경기 요약 */}
-                    <div
-                      onClick={() => toggleMatch(match.matchId)}
-                      className={`p-4 cursor-pointer ${match.victory ? 'bg-blue-50' : 'bg-red-50'}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          {/* 승패 */}
-                          <div className={`text-2xl font-bold ${match.victory ? 'text-blue-600' : 'text-red-600'}`}>
-                            {match.victory ? '✅ 승리' : '❌ 패배'}
-                          </div>
-
-                          {/* 챔피언 & KDA */}
-                          <div>
-                            <div className="font-bold text-gray-900">{match.championName}</div>
-                            <div className="text-sm text-gray-600">
-                              <span className="font-semibold">{match.kills}</span> / 
-                              <span className="font-semibold text-red-600"> {match.deaths}</span> / 
-                              <span className="font-semibold"> {match.assists}</span>
-                              <span className="ml-2 text-gray-500">
-                                (KDA {match.deaths > 0 ? ((match.kills + match.assists) / match.deaths).toFixed(2) : (match.kills + match.assists).toFixed(1)})
-                              </span>
-                            </div>
-                          </div>
+                  <div
+                    key={match.matchId}
+                    onClick={() => handleMatchClick(match)}
+                    className={`p-4 rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                      match.victory ? 'bg-blue-50 hover:bg-blue-100' : 'bg-red-50 hover:bg-red-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        {/* 승패 */}
+                        <div className={`text-2xl font-bold ${match.victory ? 'text-blue-600' : 'text-red-600'}`}>
+                          {match.victory ? '✅ 승리' : '❌ 패배'}
                         </div>
 
-                        <div className="flex items-center gap-4">
-                          {/* 게임 정보 */}
-                          <div className="text-right text-sm">
-                            <div className="text-gray-700">{match.queueType}</div>
-                            <div className="text-gray-500">{formatRelativeTime(match.gameDate)}</div>
+                        {/* 챔피언 & KDA */}
+                        <div>
+                          <div className="font-bold text-gray-900">{match.championName}</div>
+                          <div className="text-sm text-gray-600">
+                            <span className="font-semibold">{match.kills}</span> / 
+                            <span className="font-semibold text-red-600"> {match.deaths}</span> / 
+                            <span className="font-semibold"> {match.assists}</span>
+                            <span className="ml-2 text-gray-500">
+                              (KDA {match.deaths > 0 ? ((match.kills + match.assists) / match.deaths).toFixed(2) : (match.kills + match.assists).toFixed(1)})
+                            </span>
                           </div>
-
-                          {/* 펼치기 버튼 */}
-                          {expandedMatches.has(match.matchId) ? (
-                            <ChevronUp className="text-gray-400" size={24} />
-                          ) : (
-                            <ChevronDown className="text-gray-400" size={24} />
-                          )}
                         </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        {/* 게임 정보 */}
+                        <div className="text-right text-sm">
+                          <div className="text-gray-700">{match.queueType}</div>
+                          <div className="text-gray-500">{formatRelativeTime(match.gameDate)}</div>
+                        </div>
+
+                        {/* 화살표 아이콘 */}
+                        <div className="text-gray-400">→</div>
                       </div>
                     </div>
-
-                    {/* 경기 상세 정보 (펼쳤을 때) */}
-                    {expandedMatches.has(match.matchId) && (
-                      <div className="p-4 bg-white border-t-2 border-gray-200">
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          <div className="flex items-center gap-2">
-                            <Coins className="text-yellow-600" size={20} />
-                            <div>
-                              <div className="text-xs text-gray-500">획득 골드</div>
-                              <div className="font-semibold">{match.goldEarned.toLocaleString()}</div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <Activity className="text-red-600" size={20} />
-                            <div>
-                              <div className="text-xs text-gray-500">총 딜량</div>
-                              <div className="font-semibold">{match.totalDamage.toLocaleString()}</div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <Target className="text-green-600" size={20} />
-                            <div>
-                              <div className="text-xs text-gray-500">CS</div>
-                              <div className="font-semibold">
-                                {match.cs} 
-                                <span className="text-xs text-gray-500 ml-1">
-                                  ({(match.cs / (match.gameLength / 60)).toFixed(1)}/분)
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <Clock className="text-blue-600" size={20} />
-                            <div>
-                              <div className="text-xs text-gray-500">게임 시간</div>
-                              <div className="font-semibold">{formatGameLength(match.gameLength)}</div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <Calendar className="text-purple-600" size={20} />
-                            <div>
-                              <div className="text-xs text-gray-500">게임 날짜</div>
-                              <div className="font-semibold text-sm">
-                                {new Date(match.gameDate).toLocaleString('ko-KR', {
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -320,4 +246,4 @@ const RiotGameData = () => {
   );
 };
 
-export default RiotGameData;
+export default RiotSearchPage;
