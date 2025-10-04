@@ -3,7 +3,10 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 import SimpleBoard from './components/SimpleBoard';
 import RiotSearchPage from './pages/RiotSearchPage';
 import MatchDetailPage from './pages/MatchDetailPage';
-import { MessageSquare, Trophy } from 'lucide-react';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import { AuthProvider } from './context/AuthContext';
+import { MessageSquare, Trophy, LogIn } from 'lucide-react';
 
 // 네비게이션 컴포넌트 (현재 경로 감지용)
 function Navigation() {
@@ -44,6 +47,14 @@ function Navigation() {
               <Trophy size={18} />
               게임 전적
             </Link>
+            
+            <Link
+              to="/login"
+              className="px-4 py-2 rounded-lg flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 transition-colors font-medium"
+            >
+              <LogIn size={18} />
+              로그인
+            </Link>
           </div>
         </div>
       </div>
@@ -53,20 +64,24 @@ function Navigation() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <div className="App">
-        <Navigation />
-        
-        <div className="min-h-screen">
-          <Routes>
-            <Route path="/" element={<RiotSearchPage />} />
-            <Route path="/board" element={<SimpleBoard />} />
-            <Route path="/riot" element={<RiotSearchPage />} />
-            <Route path="/riot/match/:matchId" element={<MatchDetailPage />} />
-          </Routes>
+    <AuthProvider>
+      <BrowserRouter>
+        <div className="App">
+          <Navigation />
+          
+          <div className="min-h-screen">
+            <Routes>
+              <Route path="/" element={<RiotSearchPage />} />
+              <Route path="/board" element={<SimpleBoard />} />
+              <Route path="/riot" element={<RiotSearchPage />} />
+              <Route path="/riot/match/:matchId" element={<MatchDetailPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+            </Routes>
+          </div>
         </div>
-      </div>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
